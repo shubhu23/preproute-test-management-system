@@ -98,7 +98,7 @@ export default function QuestionCard({
             <Typography variant="caption" sx={{ fontWeight: 600 }}>
               Explanation:
             </Typography>
-            <Typography variant="caption" display="block">
+            <Typography variant="caption" sx={{ display: "block" }}>
               {question.explanation}
             </Typography>
           </Box>
