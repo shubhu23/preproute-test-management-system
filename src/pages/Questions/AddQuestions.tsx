@@ -8,6 +8,7 @@ import {
 import {
   useState,
   useRef,
+  useEffect,
 } from "react";
 
 import {
@@ -21,6 +22,10 @@ import QuestionCard from "./QuestionCard";
 import {
   useCreateQuestions,
 } from "../../hooks/useQuestions";
+
+import {
+  useFetchQuestions,
+} from "../../hooks/useFetchQuestions";
 
 export default function AddQuestions() {
   const navigate =
@@ -53,6 +58,40 @@ export default function AddQuestions() {
     localStorage.getItem(
       "currentTestSubject"
     );
+
+  const questionIdsString =
+    localStorage.getItem(
+      "questionIds"
+    );
+
+  const questionIds: string[] =
+    questionIdsString
+      ? JSON.parse(
+          questionIdsString
+        )
+      : [];
+
+  // Fetch existing questions if they exist
+  const { data: fetchedQuestions } =
+    useFetchQuestions(
+      questionIds
+    );
+
+  // Load fetched questions into state
+  useEffect(() => {
+    if (
+      fetchedQuestions &&
+      fetchedQuestions.length > 0 &&
+      questions.length === 0
+    ) {
+      setQuestions(
+        fetchedQuestions
+      );
+    }
+  }, [
+    fetchedQuestions,
+    questions.length,
+  ]);
 
   const handleAddQuestion =
     (data: any) => {
@@ -124,15 +163,42 @@ export default function AddQuestions() {
         return;
       }
 
+      // Construct payload with proper field filtering
+      // Include id for existing questions (to trigger update)
+      // Exclude id for new questions (to trigger create)
       const payload =
         questions.map(
-          (q) => ({
-            ...q,
-            type: "mcq",
-            subject,
-            test_id:
-              testId,
-          })
+          (q) => {
+            const questionPayload: any = {
+              type: "mcq",
+              question: q.question,
+              option1: q.option1,
+              option2: q.option2,
+              option3: q.option3,
+              option4: q.option4,
+              ...(q.option5 && {
+                option5: q.option5,
+              }),
+              ...(q.option6 && {
+                option6: q.option6,
+              }),
+              correct_option:
+                q.correct_option,
+              difficulty:
+                q.difficulty,
+              explanation:
+                q.explanation,
+              subject,
+              test_id: testId,
+            };
+
+            // Include id if it's an existing question
+            if (q.id) {
+              questionPayload.id = q.id;
+            }
+
+            return questionPayload;
+          }
         );
 
       const response =
@@ -186,6 +252,11 @@ export default function AddQuestions() {
       )}
 
       <QuestionForm
+        key={
+          editingIndex !== null
+            ? `edit-${editingIndex}`
+            : "add-new"
+        }
         onSubmit={
           handleAddQuestion
         }
