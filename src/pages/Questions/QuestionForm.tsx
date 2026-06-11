@@ -38,26 +38,36 @@ export default function QuestionForm({
     },
   });
 
+  // Reset form when defaultValues change
   useEffect(() => {
     if (defaultValues) {
       reset(defaultValues);
     }
-  }, [defaultValues, reset]);
+  }, [defaultValues]);
 
+  // Provide reset function via ref for external clearing
   useEffect(() => {
+    const resetForm = () =>
+      reset({
+        question: "",
+        option1: "",
+        option2: "",
+        option3: "",
+        option4: "",
+        correct_option: "",
+        difficulty: "",
+        explanation: "",
+      });
+
     if (formResetRef) {
-      formResetRef.current = () =>
-        reset({
-          question: "",
-          option1: "",
-          option2: "",
-          option3: "",
-          option4: "",
-          correct_option: "",
-          difficulty: "",
-          explanation: "",
-        });
+      formResetRef.current = resetForm;
     }
+
+    return () => {
+      if (formResetRef) {
+        formResetRef.current = null;
+      }
+    };
   }, [reset, formResetRef]);
 
   const handleFormSubmit = async (data: any) => {
