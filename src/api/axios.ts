@@ -1,7 +1,11 @@
 import axios from "axios";
 
-// Always use backend directly
-const baseURL = 'https://admin-moderator-backend-staging.up.railway.app/api';
+// In production (Netlify), use proxy to avoid CORS
+// In development, use direct backend
+const baseURL = 
+  import.meta.env.MODE === 'production'
+    ? '/api'
+    : 'https://admin-moderator-backend-staging.up.railway.app/api';
 
 const api = axios.create({
   baseURL,
