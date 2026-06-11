@@ -3,17 +3,13 @@
   publish = "dist"
   functions = "netlify/functions"
 
-[dev]
-  command = "npm run dev"
-  port = 8888
-
-# Proxy API requests through Netlify function to avoid CORS issues
+# Proxy all /api/* requests through our proxy function
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/proxy/:splat"
   status = 200
 
-# Redirect all unmatched routes to index.html for SPA routing
+# Redirect all other routes to index.html for SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
