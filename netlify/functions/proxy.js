@@ -1,9 +1,21 @@
-const BACKEND_URL = process.env.VITE_API_BASE_URL || 'https://admin-moderator-backend-staging.up.railway.app/api';
+const BACKEND_URL = 'https://admin-moderator-backend-staging.up.railway.app/api';
 
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
   try {
-    // Get the path after /api
-    const path = event.path.replace('/.netlify/functions/proxy', '');
+    // Extract path from the redirected URL
+    // event.path will be something like: /.netlify/functions/proxy/auth/login
+    let path = event.path;
+    
+    // Remove the function path to get the API path
+    if (path.startsWith('/.netlify/functions/proxy')) {
+      path = path.replace('/.netlify/functions/proxy', '');
+    }
+    
+    // Ensure path starts with /
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
+
     const method = event.httpMethod;
     
     // Build headers
@@ -25,13 +37,18 @@ exports.handler = async (event) => {
     }
 
     // Make the request to backend
-    const response = await fetch(`${BACKEND_URL}${path}`, {
+    const fullURL = `${BACKEND_URL}${path}`;
+    console.log(`Proxying ${method} request to: ${fullURL}`);
+    
+    const response = await fetch(fullURL, {
       method,
       headers,
       body,
     });
 
     const data = await response.json();
+    
+    console.log(`Response status: ${response.status}`);
 
     // Return response
     return {
