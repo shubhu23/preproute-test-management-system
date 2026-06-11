@@ -1,8 +1,9 @@
 import axios from "axios";
 
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://admin-moderator-backend-staging.up.railway.app/api';
+
 const api = axios.create({
-  baseURL:
-    "https://admin-moderator-backend-staging.up.railway.app/api",
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },
