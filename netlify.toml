@@ -10,7 +10,7 @@
 # Proxy API requests through Netlify function to avoid CORS issues
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/proxy:splat"
+  to = "/.netlify/functions/proxy/:splat"
   status = 200
 
 # Redirect all unmatched routes to index.html for SPA routing
