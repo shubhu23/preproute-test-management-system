@@ -1,18 +1,17 @@
 import axios from "axios";
 
-// In production (Netlify), use proxy to avoid CORS
-// In development, use direct backend
+// Use proxy in production (Netlify), direct backend in development
 const baseURL = 
   import.meta.env.MODE === 'production'
-    ? '/api'
-    : 'https://admin-moderator-backend-staging.up.railway.app/api';
+    ? '/api'  // All requests through proxy on Netlify
+    : 'https://admin-moderator-backend-staging.up.railway.app/api'; // Direct in dev
 
 const api = axios.create({
   baseURL,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
+  withCredentials: false,  // Changed to false for cross-origin requests
 });
 
 api.interceptors.request.use(
