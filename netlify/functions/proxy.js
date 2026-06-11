@@ -1,76 +1,84 @@
 const BACKEND_URL = 'https://admin-moderator-backend-staging.up.railway.app/api';
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   try {
-    // Extract path from the redirected URL
-    // event.path will be something like: /.netlify/functions/proxy/auth/login
-    let path = event.path;
+    // Get the original request path
+    let path = event.path || '';
     
-    // Remove the function path to get the API path
-    if (path.startsWith('/.netlify/functions/proxy')) {
-      path = path.replace('/.netlify/functions/proxy', '');
+    // Remove the proxy function prefix if it exists
+    if (path.includes('/.netlify/functions/proxy')) {
+      path = path.split('/.netlify/functions/proxy')[1] || '';
     }
     
-    // Ensure path starts with /
-    if (!path.startsWith('/')) {
-      path = '/' + path;
+    // Build the target URL
+    let targetURL = `${BACKEND_URL}${path}`;
+    
+    // Add query string if it exists
+    if (event.queryStringParameters) {
+      const queryString = new URLSearchParams(event.queryStringParameters).toString();
+      targetURL += queryString ? `?${queryString}` : '';
     }
 
-    const method = event.httpMethod;
+    const method = event.httpMethod || 'GET';
     
-    // Build headers
+    // Prepare headers
     const headers = {
       'Content-Type': 'application/json',
     };
 
-    // Pass through Authorization header if present
+    // Forward authorization header
     if (event.headers.authorization) {
       headers['Authorization'] = event.headers.authorization;
     }
 
-    // Parse body if present
-    let body = undefined;
-    if (event.body) {
-      body = event.httpMethod !== 'GET' && event.httpMethod !== 'DELETE' 
-        ? JSON.stringify(JSON.parse(event.body))
-        : undefined;
+    // Prepare request body
+    let body = null;
+    if (event.body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      body = event.isBase64Encoded 
+        ? Buffer.from(event.body, 'base64').toString('utf-8')
+        : event.body;
     }
 
-    // Make the request to backend
-    const fullURL = `${BACKEND_URL}${path}`;
-    console.log(`Proxying ${method} request to: ${fullURL}`);
-    
-    const response = await fetch(fullURL, {
+    // Make the actual backend request
+    const backendResponse = await fetch(targetURL, {
       method,
       headers,
       body,
     });
 
-    const data = await response.json();
+    // Parse the response
+    const responseBody = await backendResponse.text();
+    let parsedBody = responseBody;
     
-    console.log(`Response status: ${response.status}`);
+    try {
+      parsedBody = JSON.parse(responseBody);
+    } catch (e) {
+      // Response is not JSON, keep as text
+    }
 
-    // Return response
+    // Return the response
     return {
-      statusCode: response.status,
+      statusCode: backendResponse.status,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
-      body: JSON.stringify(data),
+      body: typeof parsedBody === 'string' ? parsedBody : JSON.stringify(parsedBody),
     };
+
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error('Proxy error:', error.message);
     return {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
       },
       body: JSON.stringify({ 
         error: 'Proxy error',
-        message: error.message 
+        message: error.message,
       }),
     };
   }
